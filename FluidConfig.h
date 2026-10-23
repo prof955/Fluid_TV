@@ -26,7 +26,6 @@ constexpr int SCREEN_H = 240;
 constexpr int FLUID_GRID_W = 60;
 constexpr int FLUID_GRID_H = 60;
 constexpr int FLUID_GRID_CELLS = FLUID_GRID_W * FLUID_GRID_H;
-constexpr float FLUID_FILL_FRACTION = 0.38f;
 constexpr int FLUID_SOLVER_SCALE = 1;  // 20x20 particle spatial hash/density samples
 constexpr int FLUID_SOLVER_W = FLUID_GRID_W / FLUID_SOLVER_SCALE;
 constexpr int FLUID_SOLVER_H = FLUID_GRID_H / FLUID_SOLVER_SCALE;
@@ -44,7 +43,7 @@ constexpr int RENDER_BAND_CELL_ROWS = 4;
 constexpr int RENDER_BAND_HEIGHT = RENDER_BAND_CELL_ROWS * FLUID_CELL_PIXELS;
 
 constexpr uint32_t IMU_PERIOD_MS = 10;       // 100 Hz
-constexpr uint32_t FLUID_STEP_MS = 12;       // 50 Hz
+constexpr uint32_t FLUID_STEP_MS = 10;       // 50 Hz
 constexpr uint32_t RENDER_PERIOD_MS = 27;    // target ~30 FPS
 constexpr uint32_t VIEW_HOLD_MS = 500;      // one view change per 3-second touch
 

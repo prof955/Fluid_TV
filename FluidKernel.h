@@ -70,47 +70,59 @@ public:
   uint32_t totalMass() const { return PARTICLE_COUNT; }
   float restDensity() const { return restDensity_; }
 
-  void makeSnapshot(FluidSnapshot &snapshot) {
-    // Sample the particle density on the 20x20 solver lattice, threshold it
-    // into a single liquid-coverage field, then bilinearly upscale to LEDs.
+void makeSnapshot(FluidSnapshot &snapshot) {
     const float emptyDensity = restDensity_ * DENSITY_EDGE_FRACTION;
     const float fullDensity = restDensity_ + DENSITY_SELF_BIAS;
     const float densityRange = fullDensity - emptyDensity;
+    const float invDensityRange = densityRange > 0.0001f ? (1.0f / densityRange) : 0.0f;
 
-    for (int sy = 0; sy < SOLVER_H; ++sy) {
-      const float sampleY = ((float)sy + 0.5f) * (float)FLUID_SOLVER_SCALE;
-      for (int sx = 0; sx < SOLVER_W; ++sx) {
-        const float sampleX = ((float)sx + 0.5f) * (float)FLUID_SOLVER_SCALE;
-        float rho = sampleDensityAt(sampleX, sampleY);
-        float t = densityRange > 0.0001f ? (rho - emptyDensity) / densityRange : 0.0f;
+    // SOLVER_SCALE == 1 durumu için doğrudan 1:1 hızlı kopyalama (Interpolasyon döngülerini atlar)
+    if (FLUID_SOLVER_SCALE == 1) {
+      for (int i = 0; i < SOLVER_CELLS; ++i) {
+        // Koordinat hesabı yapmak yerine doğrudan hücreden oku
+        int cy = i / SOLVER_W;
+        int cx = i % SOLVER_W;
+        float rho = sampleDensityAt((float)cx + 0.5f, (float)cy + 0.5f);
+        float t = (rho - emptyDensity) * invDensityRange;
         t = clampf(t, 0.0f, 1.0f);
-        // Smoothstep makes the liquid edge antialiased without changing the
-        // underlying fixed particle count or introducing a second blob.
-        t = t * t * (3.0f - 2.0f * t);
-        densityField_[index(sx, sy)] = (uint8_t)(t * 255.0f + 0.5f);
+        t = t * t * (3.0f - 2.0f * t); // Smoothstep
+        snapshot.fill[i] = (uint8_t)(t * 255.0f + 0.5f);
       }
-    }
+    } else {
+      // Orijinal ölçeklemeli kod (Solver 2 vb. için)
+      for (int sy = 0; sy < SOLVER_H; ++sy) {
+        const float sampleY = ((float)sy + 0.5f) * (float)FLUID_SOLVER_SCALE;
+        for (int sx = 0; sx < SOLVER_W; ++sx) {
+          const float sampleX = ((float)sx + 0.5f) * (float)FLUID_SOLVER_SCALE;
+          float rho = sampleDensityAt(sampleX, sampleY);
+          float t = invDensityRange > 0.0f ? (rho - emptyDensity) * invDensityRange : 0.0f;
+          t = clampf(t, 0.0f, 1.0f);
+          t = t * t * (3.0f - 2.0f * t);
+          densityField_[index(sx, sy)] = (uint8_t)(t * 255.0f + 0.5f);
+        }
+      }
 
-    for (int y = 0; y < FLUID_GRID_H; ++y) {
-      const float sy = (float)y / (float)FLUID_SOLVER_SCALE;
-      int y0 = (int)sy;
-      if (y0 >= SOLVER_H) y0 = SOLVER_H - 1;
-      const int y1 = y0 + 1 < SOLVER_H ? y0 + 1 : y0;
-      const float ty = sy - (float)y0;
-      for (int x = 0; x < FLUID_GRID_W; ++x) {
-        const float sx = (float)x / (float)FLUID_SOLVER_SCALE;
-        int x0 = (int)sx;
-        if (x0 >= SOLVER_W) x0 = SOLVER_W - 1;
-        const int x1 = x0 + 1 < SOLVER_W ? x0 + 1 : x0;
-        const float tx = sx - (float)x0;
-        const float m00 = (float)densityField_[index(x0, y0)];
-        const float m10 = (float)densityField_[index(x1, y0)];
-        const float m01 = (float)densityField_[index(x0, y1)];
-        const float m11 = (float)densityField_[index(x1, y1)];
-        const float top = m00 + (m10 - m00) * tx;
-        const float bottom = m01 + (m11 - m01) * tx;
-        snapshot.fill[y * FLUID_GRID_W + x] =
-          (uint8_t)clampf(top + (bottom - top) * ty, 0.0f, 255.0f);
+      for (int y = 0; y < FLUID_GRID_H; ++y) {
+        const float sy = (float)y / (float)FLUID_SOLVER_SCALE;
+        int y0 = (int)sy;
+        if (y0 >= SOLVER_H) y0 = SOLVER_H - 1;
+        const int y1 = y0 + 1 < SOLVER_H ? y0 + 1 : y0;
+        const float ty = sy - (float)y0;
+        for (int x = 0; x < FLUID_GRID_W; ++x) {
+          const float sx = (float)x / (float)FLUID_SOLVER_SCALE;
+          int x0 = (int)sx;
+          if (x0 >= SOLVER_W) x0 = SOLVER_W - 1;
+          const int x1 = x0 + 1 < SOLVER_W ? x0 + 1 : x0;
+          const float tx = sx - (float)x0;
+          const float m00 = (float)densityField_[index(x0, y0)];
+          const float m10 = (float)densityField_[index(x1, y0)];
+          const float m01 = (float)densityField_[index(x0, y1)];
+          const float m11 = (float)densityField_[index(x1, y1)];
+          const float top = m00 + (m10 - m00) * tx;
+          const float bottom = m01 + (m11 - m01) * tx;
+          snapshot.fill[y * FLUID_GRID_W + x] =
+            (uint8_t)clampf(top + (bottom - top) * ty, 0.0f, 255.0f);
+        }
       }
     }
     snapshot.flowSpeed = bulkFlowSpeed_;
@@ -122,7 +134,7 @@ private:
   static constexpr int SOLVER_W = FLUID_SOLVER_W;
   static constexpr int SOLVER_H = FLUID_SOLVER_H;
   static constexpr int SOLVER_CELLS = FLUID_SOLVER_CELLS;
-  static constexpr int PAIR_MAX = PARTICLE_COUNT * 16;  // overflow safely falls back to re-walking bins
+  static constexpr int PAIR_MAX = PARTICLE_COUNT * 24;  // overflow safely falls back to re-walking bins
   static constexpr int NEIGHBOR_REACH = 2;  // h=3.8, bin width=2.0 grid cells
   static constexpr float SPACING = 2.2f;
   static constexpr float SMOOTH_RADIUS = 3.8f;
