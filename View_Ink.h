@@ -5,7 +5,7 @@ namespace FluidRender {
 inline void renderInk(const FluidSnapshot &state, uint16_t *frame,
                       int firstCellRow, int cellRowCount) {
   fillBandBackground(frame, cellRowCount, rgb565(3, 6, 5));
-  const uint16_t unlit = rgb565(95, 42, 40);
+  const uint16_t unlit = rgb565(0, 0, 0);
   const uint16_t unlitHighlight = rgb565(70, 78, 73);
   const int lastCellRow = firstCellRow + cellRowCount;
 
@@ -17,7 +17,9 @@ inline void renderInk(const FluidSnapshot &state, uint16_t *frame,
         continue;
       }
 
-      const bool surface = isLiquidSurfaceCell(state, cx, cy);
+//      const bool surface = isLiquidSurfaceCell(state, cx, cy);
+//      const bool surface = isCustomLiquidSurfaceCell(state, cx, cy, 3, 0, 1, 1);
+      const bool surface = isCustomLiquidSurfaceCell(state, cx, cy);
       const float fillAmount = (float)fill * (1.0f / 255.0f);
       const float light = densityLightingAt(state, cx, cy);
       const float pigment = 0.31f + fillAmount * 0.43f +

@@ -156,7 +156,7 @@ private:
 
   Particle particles_[PARTICLE_MAX];
   int16_t cellHead_[SOLVER_CELLS];
-  uint8_t pairNeighbor_[PAIR_MAX];
+  uint16_t pairNeighbor_[PAIR_MAX];
   uint16_t pairOffset_[PARTICLE_MAX + 1];
   uint8_t densityField_[SOLVER_CELLS];
   float downX_, downY_;
@@ -235,7 +235,7 @@ private:
   void seedPool() {
     // 18 by 7 at the rest spacing gives 126 particles, roughly 38% of the
     // 40x40 display area. Small deterministic jitter prevents a frozen lattice.
-    const int columns = 18;
+    const int columns = 25;
     const float x0 = 0.5f * ((float)FLUID_GRID_W - (float)(columns - 1) * SPACING);
     const float y0 = (float)FLUID_GRID_H - x0;
     for (int i = 0; i < PARTICLE_COUNT; ++i) {
@@ -311,7 +311,7 @@ private:
         if (r2 >= SMOOTH_RADIUS_SQ || r2 < 1.0e-8f) return;
 
         if (pairCount_ < PAIR_MAX) {
-          pairNeighbor_[pairCount_++] = (uint8_t)j;
+          pairNeighbor_[pairCount_++] = (uint16_t)j;
         } else {
           pairListValid_ = false;
         }
@@ -476,4 +476,3 @@ private:
     bulkFlowSpeed_ = sqrtf(speedSquared / (float)PARTICLE_COUNT);
   }
 };
-

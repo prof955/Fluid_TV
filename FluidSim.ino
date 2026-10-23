@@ -105,7 +105,7 @@ void setup() {
   }
 
   const BaseType_t imuCreated = xTaskCreatePinnedToCore(
-    imuTaskCode, "ImuRead", 4096, nullptr, 2, &gImuTaskHandle, 0);
+    imuTaskCode, "ImuRead", 4096, nullptr, 5, &gImuTaskHandle, 0);
   if (imuCreated != pdPASS) {
     gImuTaskHandle = nullptr;
     Serial.println("ERROR: Core 0 IMU task could not be created");
@@ -171,7 +171,7 @@ static void configureImuBus() {
   Wire.setTimeOut(5);
   // A standard-rate bus is more tolerant of longer board wiring and small
   // signal-integrity problems; 14-byte IMU reads still fit comfortably at 100 Hz.
-  Wire.setClock(100000);
+  Wire.setClock(400000);//400000 can be tried!
 }
 
 static void recoverImuBus() {

@@ -17,7 +17,7 @@ inline void renderParticles(const FluidSnapshot &state, uint16_t *frame,
         continue;
       }
 
-      const bool surface = isLiquidSurfaceCell(state, cx, cy);
+      const bool surface = isCustomLiquidSurfaceCell(state, cx, cy);
       const float fillAmount = (float)fill * (1.0f / 255.0f);
       const float light = densityLightingAt(state, cx, cy);
       const float brightness = 0.43f + fillAmount * 0.40f +
